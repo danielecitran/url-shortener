@@ -22,8 +22,8 @@ public class ApiExceptionHandler {
     public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .findFirst()
-                .map(error -> error.getDefaultMessage() == null ? "Ungueltige Eingabe" : error.getDefaultMessage())
-                .orElse("Ungueltige Eingabe");
+                .map(error -> error.getDefaultMessage() == null ? "Ungültige Eingabe" : error.getDefaultMessage())
+                .orElse("Ungültige Eingabe");
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
