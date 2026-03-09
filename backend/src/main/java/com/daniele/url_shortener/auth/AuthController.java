@@ -1,5 +1,7 @@
 package com.daniele.url_shortener.auth;
 
+import com.daniele.url_shortener.auth.dto.LoginRequest;
+import com.daniele.url_shortener.auth.dto.LoginResponse;
 import com.daniele.url_shortener.auth.dto.RegisterRequest;
 import com.daniele.url_shortener.auth.dto.RegisterResponse;
 import jakarta.validation.Valid;
@@ -23,5 +25,12 @@ public class AuthController {
         Long userId = authService.register(request);
         RegisterResponse response = new RegisterResponse(userId, "Registrierung erfolgreich");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        Long userId = authService.login(request);
+        LoginResponse response = new LoginResponse(userId, "Login erfolgreich");
+        return ResponseEntity.ok(response);
     }
 }

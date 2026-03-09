@@ -1,6 +1,7 @@
 package com.daniele.url_shortener.common;
 
 import com.daniele.url_shortener.auth.exception.EmailAlreadyExistsException;
+import com.daniele.url_shortener.auth.exception.InvalidCredentialsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -27,6 +28,13 @@ public class ApiExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ApiErrorResponse("VALIDATION_ERROR", message));
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiErrorResponse("INVALID_CREDENTIALS", ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
