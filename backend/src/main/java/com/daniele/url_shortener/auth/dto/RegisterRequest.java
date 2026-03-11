@@ -2,6 +2,7 @@ package com.daniele.url_shortener.auth.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
@@ -15,6 +16,10 @@ public record RegisterRequest(
 
         @NotBlank(message = "E-Mail ist erforderlich")
         @Email(message = "E-Mail ist ungültig")
+        @Pattern(
+                regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}$",
+                message = "E-Mail muss eine gueltige Domain-Endung haben"
+        )
         String email,
 
         @NotBlank(message = "Passwort ist erforderlich")
