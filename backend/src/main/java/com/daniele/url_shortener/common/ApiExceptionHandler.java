@@ -2,6 +2,9 @@ package com.daniele.url_shortener.common;
 
 import com.daniele.url_shortener.auth.exception.EmailAlreadyExistsException;
 import com.daniele.url_shortener.auth.exception.InvalidCredentialsException;
+import com.daniele.url_shortener.link.exception.InvalidUrlException;
+import com.daniele.url_shortener.link.exception.ShortCodeNotFoundException;
+import com.daniele.url_shortener.link.exception.UserNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -35,6 +38,27 @@ public class ApiExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(new ApiErrorResponse("INVALID_CREDENTIALS", ex.getMessage()));
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleUserNotFound(UserNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ApiErrorResponse("USER_NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidUrlException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidUrl(InvalidUrlException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ApiErrorResponse("INVALID_URL", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ShortCodeNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleShortCodeNotFound(ShortCodeNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ApiErrorResponse("SHORT_CODE_NOT_FOUND", ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
