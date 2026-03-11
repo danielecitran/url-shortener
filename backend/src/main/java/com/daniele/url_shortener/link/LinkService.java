@@ -87,16 +87,51 @@ public class LinkService {
 
     private String normalizeAndValidateUrl(String rawUrl) {
         String trimmed = rawUrl.trim();
+        String prepared = trimmed;
+
+        // Wenn kein Schema vorhanden ist, setzen wir automatisch http://
+        boolean hasScheme = prepared.matches("^[a-zA-Z][a-zA-Z0-9+.-]*://.*");
+        if (!hasScheme) {
+            if (prepared.regionMatches(true, 0, "www.", 0, 4)) {
+                prepared = prepared.substring(4);
+            }
+            prepared = "http://" + prepared;
+        }
+
         try {
-            URI uri = new URI(trimmed);
+            URI uri = new URI(prepared);
             String scheme = uri.getScheme();
             if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))) {
                 throw new InvalidUrlException("URL muss mit http:// oder https:// beginnen");
             }
-            if (uri.getHost() == null || uri.getHost().isBlank()) {
+
+            String host = uri.getHost();
+            if (host == null || host.isBlank()) {
                 throw new InvalidUrlException("URL ist ungueltig");
             }
-            return trimmed;
+
+            String normalizedHost = host.toLowerCase();
+            if (normalizedHost.startsWith("www.")) {
+                normalizedHost = normalizedHost.substring(4);
+            }
+
+            // Domain muss einen Punkt enthalten (z.B. youtube.com)
+            if (!normalizedHost.contains(".")
+                    || normalizedHost.startsWith(".")
+                    || normalizedHost.endsWith(".")) {
+                throw new InvalidUrlException("Bitte gib eine gueltige Domain ein (z.B. youtube.com)");
+            }
+
+            URI normalizedUri = new URI(
+                    scheme.toLowerCase(),
+                    uri.getUserInfo(),
+                    normalizedHost,
+                    uri.getPort(),
+                    uri.getPath(),
+                    uri.getQuery(),
+                    uri.getFragment()
+            );
+            return normalizedUri.toString();
         } catch (URISyntaxException e) {
             throw new InvalidUrlException("URL ist ungueltig");
         }
