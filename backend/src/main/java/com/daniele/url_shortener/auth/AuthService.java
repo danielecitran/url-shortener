@@ -37,7 +37,7 @@ public class AuthService {
     }
 
     @Transactional(readOnly = true)
-    public Long login(LoginRequest request) {
+    public User login(LoginRequest request) {
         String normalizedEmail = request.email().trim().toLowerCase();
 
         User user = userRepository.findByEmail(normalizedEmail)
@@ -48,6 +48,6 @@ public class AuthService {
             throw new InvalidCredentialsException("E-Mail oder Passwort ist falsch");
         }
 
-        return user.getUserId();
+        return user;
     }
 }

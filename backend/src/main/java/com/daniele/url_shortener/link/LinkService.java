@@ -33,10 +33,10 @@ public class LinkService {
     private String baseUrl;
 
     @Transactional
-    public CreateLinkResponse createShortLink(CreateLinkRequest request) {
+    public CreateLinkResponse createShortLink(Long userId, CreateLinkRequest request) {
         String normalizedUrl = normalizeAndValidateUrl(request.originalUrl());
 
-        User user = userRepository.findById(request.userId())
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User wurde nicht gefunden"));
 
         Link link = new Link();

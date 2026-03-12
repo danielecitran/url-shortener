@@ -4,9 +4,14 @@ import com.daniele.url_shortener.auth.dto.LoginRequest;
 import com.daniele.url_shortener.auth.dto.LoginResponse;
 import com.daniele.url_shortener.auth.dto.RegisterRequest;
 import com.daniele.url_shortener.auth.dto.RegisterResponse;
+import com.daniele.url_shortener.security.JwtService;
+import com.daniele.url_shortener.user.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +24,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtService jwtService;
+
+    @Value("${app.cookie.secure:false}")
+    private boolean cookieSecure;
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -29,8 +38,35 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        Long userId = authService.login(request);
-        LoginResponse response = new LoginResponse(userId, "Login erfolgreich");
-        return ResponseEntity.ok(response);
+        User user = authService.login(request);
+        String token = jwtService.generateToken(user.getUserId(), user.getEmail());
+
+        ResponseCookie authCookie = ResponseCookie.from(jwtService.getCookieName(), token)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(jwtService.getExpirationSeconds())
+                .build();
+
+        LoginResponse response = new LoginResponse(user.getUserId(), "Login erfolgreich");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, authCookie.toString())
+                .body(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        ResponseCookie deleteCookie = ResponseCookie.from(jwtService.getCookieName(), "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(0)
+                .build();
+
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
+                .build();
     }
 }
