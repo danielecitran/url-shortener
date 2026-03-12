@@ -1,9 +1,12 @@
 package com.daniele.url_shortener.auth;
 
+import com.daniele.url_shortener.auth.dto.CurrentUserResponse;
 import com.daniele.url_shortener.auth.dto.LoginRequest;
 import com.daniele.url_shortener.auth.dto.RegisterRequest;
 import com.daniele.url_shortener.auth.exception.EmailAlreadyExistsException;
 import com.daniele.url_shortener.auth.exception.InvalidCredentialsException;
+import com.daniele.url_shortener.link.exception.UserNotFoundException;
+import com.daniele.url_shortener.security.AuthenticatedUser;
 import com.daniele.url_shortener.user.User;
 import com.daniele.url_shortener.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -49,5 +52,18 @@ public class AuthService {
         }
 
         return user;
+    }
+
+    @Transactional(readOnly = true)
+    public CurrentUserResponse getCurrentUser(AuthenticatedUser authenticatedUser) {
+        User user = userRepository.findById(authenticatedUser.userId())
+                .orElseThrow(() -> new UserNotFoundException("User wurde nicht gefunden"));
+
+        return new CurrentUserResponse(
+                user.getUserId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail()
+        );
     }
 }

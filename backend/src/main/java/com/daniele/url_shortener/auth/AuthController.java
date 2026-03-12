@@ -1,9 +1,11 @@
 package com.daniele.url_shortener.auth;
 
+import com.daniele.url_shortener.auth.dto.CurrentUserResponse;
 import com.daniele.url_shortener.auth.dto.LoginRequest;
 import com.daniele.url_shortener.auth.dto.LoginResponse;
 import com.daniele.url_shortener.auth.dto.RegisterRequest;
 import com.daniele.url_shortener.auth.dto.RegisterResponse;
+import com.daniele.url_shortener.security.AuthenticatedUser;
 import com.daniele.url_shortener.security.JwtService;
 import com.daniele.url_shortener.user.User;
 import jakarta.validation.Valid;
@@ -13,6 +15,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +38,12 @@ public class AuthController {
         Long userId = authService.register(request);
         RegisterResponse response = new RegisterResponse(userId, "Registrierung erfolgreich");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<CurrentUserResponse> me(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+        CurrentUserResponse response = authService.getCurrentUser(authenticatedUser);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")
