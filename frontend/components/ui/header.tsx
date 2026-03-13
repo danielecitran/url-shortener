@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon";
@@ -52,14 +53,16 @@ export function Header() {
           "flex h-14 w-full items-center justify-between px-2 md:h-12 md:px-1 md:transition-all md:ease-out",
         )}
       >
-        <Image
-          src="/shortr_header.svg"
-          alt="Shortr Logo"
-          width={120}
-          height={28}
-          className="h-6 w-auto"
-          priority
-        />
+        <Link href="/#top" aria-label="Zur Startseite nach oben">
+          <Image
+            src="/shortr_header.svg"
+            alt="Shortr Logo"
+            width={120}
+            height={28}
+            className="h-6 w-auto"
+            priority
+          />
+        </Link>
         <div className="hidden items-center gap-2 md:flex">
           {links.map((link, i) => (
             <a
@@ -70,7 +73,9 @@ export function Header() {
               {link.label}
             </a>
           ))}
-          <Button variant="outline">Anmelden</Button>
+          <Button asChild variant="outline">
+            <a href="/anmelden">Anmelden</a>
+          </Button>
           <Button>Jetzt loslegen</Button>
         </div>
         <Button
@@ -105,14 +110,17 @@ export function Header() {
                   className: "justify-start",
                 })}
                 href={link.href}
+                onClick={() => setOpen(false)}
               >
                 {link.label}
               </a>
             ))}
           </div>
           <div className="flex flex-col gap-2">
-            <Button variant="outline" className="w-full">
-              Anmelden
+            <Button asChild variant="outline" className="w-full">
+              <a href="/anmelden" onClick={() => setOpen(false)}>
+                Anmelden
+              </a>
             </Button>
             <Button className="w-full">Jetzt loslegen</Button>
           </div>

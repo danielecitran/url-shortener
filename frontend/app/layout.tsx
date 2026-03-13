@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { Header } from "@/components/ui/header";
+import { AppShell } from "@/components/app-shell";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -30,10 +30,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="de" className={`${plusJakartaSans.variable} scroll-smooth`}>
-      <body className={`${plusJakartaSans.className} font-sans antialiased`}>
+      <body
+        id="top"
+        className={`${plusJakartaSans.className} font-sans antialiased`}
+      >
         <Providers>
-          <Header />
-          {children}
+          <AppShell>{children}</AppShell>
         </Providers>
       </body>
     </html>
