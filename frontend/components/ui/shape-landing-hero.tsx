@@ -2,6 +2,7 @@
 
 import { motion, type Variants } from "framer-motion";
 import Image from "next/image";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -144,7 +145,7 @@ function HeroGeometric({
       </div>
 
       <div className="relative z-10 container mx-auto flex min-h-[calc(100vh-3.5rem)] items-center px-4 md:px-6">
-        <div className="max-w-3xl mx-auto text-center">
+        <div className="max-w-3xl mx-auto translate-y-4 text-center md:translate-y-6">
           <motion.div
             custom={1}
             variants={fadeUpVariants}
@@ -200,6 +201,34 @@ function HeroGeometric({
               URL kürzen
             </Button>
           </motion.div>
+
+          <motion.a
+            custom={4}
+            variants={fadeUpVariants}
+            initial="hidden"
+            animate="visible"
+            href="#features"
+            aria-label="Zu den Funktionen scrollen"
+            className="mt-8 inline-flex items-center justify-center rounded-full p-2 text-white/45 transition-colors hover:text-white/75"
+          >
+            <motion.span
+              animate={{
+                opacity: [0.45, 0.85, 0.45],
+                filter: [
+                  "drop-shadow(0 0 0px rgba(255,255,255,0))",
+                  "drop-shadow(0 0 8px rgba(255,255,255,0.28))",
+                  "drop-shadow(0 0 0px rgba(255,255,255,0))",
+                ],
+              }}
+              transition={{
+                duration: 2.1,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: "easeInOut",
+              }}
+            >
+              <ChevronDown className="size-6" />
+            </motion.span>
+          </motion.a>
         </div>
       </div>
 

@@ -13,11 +13,11 @@ export function Header() {
   const links = [
     {
       label: "Funktionen",
-      href: "#",
+      href: "#features",
     },
     {
       label: "Über uns",
-      href: "#",
+      href: "#ueber-uns",
     },
   ];
 

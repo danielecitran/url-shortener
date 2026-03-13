@@ -29,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="de" className={plusJakartaSans.variable}>
+    <html lang="de" className={`${plusJakartaSans.variable} scroll-smooth`}>
       <body className={`${plusJakartaSans.className} font-sans antialiased`}>
         <Providers>
           <Header />
