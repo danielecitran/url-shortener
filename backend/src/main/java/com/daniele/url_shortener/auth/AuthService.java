@@ -66,4 +66,10 @@ public class AuthService {
                 user.getEmail()
         );
     }
+
+    @Transactional(readOnly = true)
+    public boolean isEmailAvailable(String email) {
+        String normalizedEmail = email.trim().toLowerCase();
+        return !userRepository.existsByEmail(normalizedEmail);
+    }
 }

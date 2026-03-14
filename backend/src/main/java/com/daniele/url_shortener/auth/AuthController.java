@@ -1,6 +1,7 @@
 package com.daniele.url_shortener.auth;
 
 import com.daniele.url_shortener.auth.dto.CurrentUserResponse;
+import com.daniele.url_shortener.auth.dto.EmailAvailabilityResponse;
 import com.daniele.url_shortener.auth.dto.LoginRequest;
 import com.daniele.url_shortener.auth.dto.LoginResponse;
 import com.daniele.url_shortener.auth.dto.RegisterRequest;
@@ -8,6 +9,8 @@ import com.daniele.url_shortener.auth.dto.RegisterResponse;
 import com.daniele.url_shortener.security.AuthenticatedUser;
 import com.daniele.url_shortener.security.JwtService;
 import com.daniele.url_shortener.user.User;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,8 +19,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Validated
 public class AuthController {
 
     private final AuthService authService;
@@ -44,6 +50,14 @@ public class AuthController {
     public ResponseEntity<CurrentUserResponse> me(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
         CurrentUserResponse response = authService.getCurrentUser(authenticatedUser);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/email-availability")
+    public ResponseEntity<EmailAvailabilityResponse> emailAvailability(
+            @RequestParam("email") @NotBlank(message = "E-Mail ist erforderlich") @Email(message = "Bitte gib eine gültige E-Mail-Adresse ein") String email
+    ) {
+        boolean available = authService.isEmailAvailable(email);
+        return ResponseEntity.ok(new EmailAvailabilityResponse(available));
     }
 
     @PostMapping("/login")
