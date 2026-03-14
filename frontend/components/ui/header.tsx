@@ -76,16 +76,23 @@ export function Header() {
           <Button asChild variant="outline">
             <a href="/anmelden">Anmelden</a>
           </Button>
-          <Button>Jetzt loslegen</Button>
+          <Button asChild>
+            <Link href="/registrieren">Jetzt loslegen</Link>
+          </Button>
         </div>
-        <Button
-          size="icon"
-          variant="outline"
-          onClick={() => setOpen(!open)}
-          className="md:hidden"
-        >
-          <MenuToggleIcon open={open} className="size-5" duration={300} />
-        </Button>
+        <div className="flex items-center gap-2 md:hidden">
+          <Button asChild size="sm" className="h-9 rounded-full px-3 text-xs">
+            <Link href="/registrieren">Jetzt loslegen</Link>
+          </Button>
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={() => setOpen(!open)}
+            aria-label={open ? "Menü schließen" : "Menü öffnen"}
+          >
+            <MenuToggleIcon open={open} className="size-5" duration={300} />
+          </Button>
+        </div>
       </nav>
 
       <div
@@ -122,7 +129,11 @@ export function Header() {
                 Anmelden
               </a>
             </Button>
-            <Button className="w-full">Jetzt loslegen</Button>
+            <Button asChild className="w-full">
+              <Link href="/registrieren" onClick={() => setOpen(false)}>
+                Jetzt loslegen
+              </Link>
+            </Button>
           </div>
         </div>
       </div>

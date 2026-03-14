@@ -11,9 +11,63 @@ export interface Testimonial {
   text: string;
 }
 
+const isValidEmail = (value: string) => {
+  const trimmed = value.trim();
+  const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
+  if (!emailRegex.test(trimmed)) return false;
+  if (trimmed.length > 254) return false;
+
+  const [localPart, domainPart] = trimmed.split("@");
+  if (!localPart || !domainPart) return false;
+  if (localPart.length > 64 || domainPart.length > 253) return false;
+
+  // Keep format strict and predictable for frontend UX.
+  if (
+    localPart.startsWith(".") ||
+    localPart.endsWith(".") ||
+    localPart.includes("..")
+  ) {
+    return false;
+  }
+
+  if (
+    domainPart.startsWith("-") ||
+    domainPart.endsWith("-") ||
+    domainPart.includes("..")
+  ) {
+    return false;
+  }
+
+  if (
+    domainPart
+      .split(".")
+      .some(
+        (label) =>
+          label.length === 0 ||
+          label.length > 63 ||
+          label.startsWith("-") ||
+          label.endsWith("-"),
+      )
+  ) {
+    return false;
+  }
+
+  const tld = domainPart.split(".").at(-1) ?? "";
+  if (tld.length > 24) return false;
+
+  return true;
+};
+
 interface SignInPageProps {
   title?: React.ReactNode;
   description?: React.ReactNode;
+  submitLabel?: string;
+  googleLabel?: string;
+  rememberMeLabel?: string;
+  secondaryPromptText?: string;
+  secondaryActionLabel?: string;
+  secondaryActionHref?: string;
   heroImageSrc?: string;
   testimonials?: Testimonial[];
   onSignIn?: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -64,6 +118,12 @@ export const SignInPage: React.FC<SignInPageProps> = ({
     </span>
   ),
   description = "Melde dich an und verwalte deine Links schnell und einfach.",
+  submitLabel = "Anmelden",
+  googleLabel = "Mit Google fortfahren",
+  rememberMeLabel = "Angemeldet bleiben",
+  secondaryPromptText = "Neu bei shortr?",
+  secondaryActionLabel = "Konto erstellen",
+  secondaryActionHref = "/registrieren",
   heroImageSrc,
   testimonials = [],
   onSignIn,
@@ -71,6 +131,21 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   onCreateAccount,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
+  const emailHasError = emailTouched && !isValidEmail(email);
+  const canSubmit = isValidEmail(email) && password.trim().length > 0;
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    if (!canSubmit) {
+      event.preventDefault();
+      setEmailTouched(true);
+      return;
+    }
+
+    onSignIn?.(event);
+  };
 
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-[#030303] font-sans text-white md:flex-row">
@@ -98,7 +173,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               {description}
             </p>
 
-            <form className="space-y-5" onSubmit={onSignIn}>
+            <form className="space-y-5" onSubmit={handleSubmit} noValidate>
               <div className="animate-element animate-delay-300">
                 <label className="text-sm font-medium text-white/65">
                   E-Mail
@@ -108,9 +183,25 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                     name="email"
                     type="email"
                     placeholder="E-Mail-Adresse eingeben"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    onBlur={() => setEmailTouched(true)}
+                    aria-invalid={emailHasError}
                     className="w-full rounded-2xl bg-transparent p-4 text-sm text-white placeholder:text-white/35 focus:outline-none"
                   />
                 </GlassInputWrapper>
+                {emailHasError && (
+                  <p className="mt-2 flex items-center gap-1.5 text-xs text-rose-400">
+                    <Image
+                      src="/info_red.svg"
+                      alt=""
+                      width={14}
+                      height={14}
+                      aria-hidden="true"
+                    />
+                    Bitte gib eine gültige E-Mail-Adresse ein
+                  </p>
+                )}
               </div>
 
               <div className="animate-element animate-delay-400">
@@ -123,6 +214,8 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                       name="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Passwort eingeben"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
                       className="w-full rounded-2xl bg-transparent p-4 pr-12 text-sm text-white placeholder:text-white/35 focus:outline-none"
                     />
                     <button
@@ -159,15 +252,20 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                     name="rememberMe"
                     className="h-3.5 w-3.5 rounded border-white/30 bg-transparent accent-indigo-300 focus-visible:ring-2 focus-visible:ring-indigo-300/40 focus-visible:ring-offset-0"
                   />
-                  <span className="text-white/90">Angemeldet bleiben</span>
+                  <span className="text-white/90">{rememberMeLabel}</span>
                 </label>
               </div>
 
               <button
                 type="submit"
-                className="animate-element animate-delay-600 w-full rounded-full bg-white py-4 font-semibold text-black shadow-lg shadow-black/30 transition-colors hover:bg-white/90"
+                disabled={!canSubmit}
+                className={`animate-element animate-delay-600 w-full rounded-full py-4 font-semibold transition-all duration-300 ease-out ${
+                  canSubmit
+                    ? "cursor-pointer bg-white text-black shadow-lg shadow-black/30 hover:bg-white/90"
+                    : "cursor-default bg-white/18 text-white/45 shadow-none"
+                }`}
               >
-                Anmelden
+                {submitLabel}
               </button>
             </form>
 
@@ -189,21 +287,18 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                 height={20}
                 aria-hidden="true"
               />
-              Mit Google fortfahren
+              {googleLabel}
             </button>
 
             <p className="animate-element animate-delay-900 text-center text-sm text-white/55">
-              Neu bei shortr?{" "}
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onCreateAccount?.();
-                }}
+              {secondaryPromptText}{" "}
+              <Link
+                href={secondaryActionHref}
+                onClick={() => onCreateAccount?.()}
                 className="text-indigo-300 transition-colors hover:text-rose-300 hover:underline"
               >
-                Konto erstellen
-              </a>
+                {secondaryActionLabel}
+              </Link>
             </p>
           </div>
         </div>

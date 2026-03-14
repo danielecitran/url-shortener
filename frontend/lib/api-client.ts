@@ -72,6 +72,13 @@ export async function register(input: {
   });
 }
 
+export async function checkEmailAvailability(email: string) {
+  const params = new URLSearchParams({ email });
+  return request<{ available: boolean }>(
+    `/api/auth/email-availability?${params.toString()}`,
+  );
+}
+
 export async function login(input: { email: string; password: string }) {
   return request<{ userId: number; message: string }>("/api/auth/login", {
     method: "POST",
