@@ -8,6 +8,7 @@ import com.daniele.url_shortener.auth.exception.EmailAlreadyExistsException;
 import com.daniele.url_shortener.auth.exception.GoogleAuthException;
 import com.daniele.url_shortener.auth.exception.GoogleProfileIncompleteException;
 import com.daniele.url_shortener.auth.exception.InvalidCredentialsException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.daniele.url_shortener.link.exception.UserNotFoundException;
 import com.daniele.url_shortener.security.AuthenticatedUser;
 import com.daniele.url_shortener.user.User;
@@ -170,7 +171,11 @@ public class AuthService {
                 throw new GoogleAuthException("Ungültige Google-Antwort");
             }
 
-            Map<String, Object> payload = objectMapper.readValue(rawResponse, Map.class);
+            Map<String, Object> payload = objectMapper.readValue(
+                    rawResponse,
+                    new TypeReference<Map<String, Object>>() {
+                    }
+            );
 
             String audience = asString(payload.get("aud"));
             if (!googleClientId.equals(audience)) {

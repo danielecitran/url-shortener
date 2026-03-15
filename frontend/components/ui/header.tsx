@@ -135,7 +135,7 @@ export function Header() {
                 <button
                   type="button"
                   onClick={() => setProfileMenuOpen((prev) => !prev)}
-                  className="group inline-flex h-10 items-center gap-1.5 rounded-full bg-[linear-gradient(135deg,rgba(17,24,39,0.95),rgba(55,65,81,0.9)_55%,rgba(71,85,105,0.88))] px-2.5 text-xs font-semibold tracking-wide text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_8px_20px_rgba(0,0,0,0.42)] transition-[filter] duration-250 hover:filter-[brightness(1.22)_contrast(1.12)_saturate(1.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300/50"
+                  className="group inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full bg-[linear-gradient(135deg,rgba(17,24,39,0.95),rgba(55,65,81,0.9)_55%,rgba(71,85,105,0.88))] px-2.5 text-xs font-semibold tracking-wide text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_8px_20px_rgba(0,0,0,0.42)] transition-[filter] duration-250 hover:filter-[brightness(1.22)_contrast(1.12)_saturate(1.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300/50"
                   aria-haspopup="menu"
                   aria-expanded={profileMenuOpen}
                   aria-label="Profilmenü öffnen"
@@ -153,7 +153,7 @@ export function Header() {
                     <button
                       type="button"
                       onClick={() => setProfileMenuOpen(false)}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-white/80 transition-colors hover:bg-white/8 hover:text-white"
+                      className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-white/80 transition-colors hover:bg-white/8 hover:text-white"
                     >
                       <Image
                         src="/settings.svg"
@@ -167,7 +167,7 @@ export function Header() {
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-rose-400 transition-colors hover:bg-white/8 hover:text-rose-300"
+                      className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-rose-400 transition-colors hover:bg-white/8 hover:text-rose-300"
                     >
                       <Image
                         src="/logout.svg"
@@ -212,7 +212,7 @@ export function Header() {
                 <button
                   type="button"
                   onClick={() => setProfileMenuOpen((prev) => !prev)}
-                  className="group inline-flex h-9 items-center gap-1 rounded-full bg-[linear-gradient(135deg,rgba(17,24,39,0.95),rgba(55,65,81,0.9)_55%,rgba(71,85,105,0.88))] px-2 text-[11px] font-semibold tracking-wide text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_7px_18px_rgba(0,0,0,0.42)] transition-[filter] duration-250 hover:filter-[brightness(1.22)_contrast(1.12)_saturate(1.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300/50"
+                  className="group inline-flex h-9 cursor-pointer items-center gap-1 rounded-full bg-[linear-gradient(135deg,rgba(17,24,39,0.95),rgba(55,65,81,0.9)_55%,rgba(71,85,105,0.88))] px-2 text-[11px] font-semibold tracking-wide text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_7px_18px_rgba(0,0,0,0.42)] transition-[filter] duration-250 hover:filter-[brightness(1.22)_contrast(1.12)_saturate(1.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300/50"
                   aria-haspopup="menu"
                   aria-expanded={profileMenuOpen}
                   aria-label="Profilmenü öffnen"
@@ -230,7 +230,7 @@ export function Header() {
                     <button
                       type="button"
                       onClick={() => setProfileMenuOpen(false)}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-white/80 transition-colors hover:bg-white/8 hover:text-white"
+                      className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-white/80 transition-colors hover:bg-white/8 hover:text-white"
                     >
                       <Image
                         src="/settings.svg"
@@ -244,7 +244,7 @@ export function Header() {
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-rose-400 transition-colors hover:bg-white/8 hover:text-rose-300"
+                      className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-rose-400 transition-colors hover:bg-white/8 hover:text-rose-300"
                     >
                       <Image
                         src="/logout.svg"

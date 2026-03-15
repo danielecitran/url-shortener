@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local Spring config metadata
+src/main/resources/META-INF/additional-spring-configuration-metadata.json
