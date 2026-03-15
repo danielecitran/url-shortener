@@ -34,6 +34,9 @@ public class User {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
+    @Column(name = "google_sub", unique = true)
+    private String googleSub;
+
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 }

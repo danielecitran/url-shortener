@@ -219,7 +219,7 @@ function HeroGeometric({
           >
             <Button
               size="lg"
-              className="gap-2 px-7 text-base font-semibold shadow-lg shadow-black/30"
+              className="cursor-pointer gap-2 px-7 text-base font-semibold shadow-lg shadow-black/30"
             >
               <Image
                 src="/scissors.svg"

@@ -3,7 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { ApiError } from "@/lib/api-client";
+import { ApiError, loginWithGoogle } from "@/lib/api-client";
+import { decodeGoogleTokenPayload, getGoogleIdToken } from "@/lib/google-auth";
 import { useAuth } from "@/lib/auth-context";
 
 // --- TYPE DEFINITIONS ---
@@ -139,18 +140,22 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   onCreateAccount,
 }) => {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, refreshCurrentUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const [emailTouched, setEmailTouched] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingCredentials, setIsSubmittingCredentials] = useState(false);
+  const [isSubmittingGoogle, setIsSubmittingGoogle] = useState(false);
   const [credentialsError, setCredentialsError] = useState(false);
   const [backendError, setBackendError] = useState(false);
   const emailHasError = emailTouched && !isValidEmail(email);
   const canSubmit =
-    isValidEmail(email) && password.trim().length > 0 && !isSubmitting;
+    isValidEmail(email) &&
+    password.trim().length > 0 &&
+    !isSubmittingCredentials &&
+    !isSubmittingGoogle;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -164,7 +169,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
     }
 
     try {
-      setIsSubmitting(true);
+      setIsSubmittingCredentials(true);
       const payload = {
         email: email.trim().toLowerCase(),
         password,
@@ -185,7 +190,47 @@ export const SignInPage: React.FC<SignInPageProps> = ({
         setBackendError(true);
       }
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingCredentials(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    setCredentialsError(false);
+    setBackendError(false);
+
+    try {
+      setIsSubmittingGoogle(true);
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      if (!clientId) {
+        throw new Error("Google Client ID fehlt");
+      }
+
+      const idToken = await getGoogleIdToken(clientId);
+
+      try {
+        await loginWithGoogle({
+          idToken,
+          rememberMe: true,
+        });
+      } catch (error) {
+        if (error instanceof ApiError && error.code === "PROFILE_INCOMPLETE") {
+          sessionStorage.setItem("shortr.google.pendingIdToken", idToken);
+          const payload = decodeGoogleTokenPayload(idToken);
+          if (typeof payload.email === "string") {
+            sessionStorage.setItem("shortr.google.pendingEmail", payload.email);
+          }
+          router.push("/registrieren");
+          return;
+        }
+        throw error;
+      }
+
+      await refreshCurrentUser();
+      router.push("/");
+    } catch {
+      setBackendError(true);
+    } finally {
+      setIsSubmittingGoogle(false);
     }
   };
 
@@ -341,7 +386,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                     : "cursor-default bg-white/18 text-white/45 shadow-none"
                 }`}
               >
-                {isSubmitting ? (
+                {isSubmittingCredentials ? (
                   <span className="inline-flex items-center">
                     <Loader2 className="h-5 w-5 animate-spin" />
                   </span>
@@ -359,8 +404,12 @@ export const SignInPage: React.FC<SignInPageProps> = ({
             </div>
 
             <button
-              onClick={onGoogleSignIn}
-              className="animate-element animate-delay-800 flex w-full items-center justify-center gap-3 rounded-full border border-white/15 bg-white/5 py-4 text-white transition-colors hover:bg-white/10"
+              onClick={() => {
+                void handleGoogleAuth();
+                onGoogleSignIn?.();
+              }}
+              disabled={isSubmittingGoogle || isSubmittingCredentials}
+              className="animate-element animate-delay-800 flex w-full cursor-pointer items-center justify-center gap-3 rounded-full border border-white/15 bg-white/5 py-4 text-white transition-colors hover:bg-white/10 disabled:cursor-default disabled:opacity-60"
             >
               <Image
                 src="/google.svg"
@@ -369,7 +418,11 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                 height={20}
                 aria-hidden="true"
               />
-              {googleLabel}
+              {isSubmittingGoogle ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                googleLabel
+              )}
             </button>
 
             <p className="animate-element animate-delay-900 text-center text-sm text-white/55">

@@ -1,6 +1,8 @@
 package com.daniele.url_shortener.common;
 
 import com.daniele.url_shortener.auth.exception.EmailAlreadyExistsException;
+import com.daniele.url_shortener.auth.exception.GoogleAuthException;
+import com.daniele.url_shortener.auth.exception.GoogleProfileIncompleteException;
 import com.daniele.url_shortener.auth.exception.InvalidCredentialsException;
 import com.daniele.url_shortener.link.exception.InvalidUrlException;
 import com.daniele.url_shortener.link.exception.ShortCodeNotFoundException;
@@ -38,6 +40,20 @@ public class ApiExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(new ApiErrorResponse("INVALID_CREDENTIALS", ex.getMessage()));
+    }
+
+    @ExceptionHandler(GoogleAuthException.class)
+    public ResponseEntity<ApiErrorResponse> handleGoogleAuth(GoogleAuthException ex) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiErrorResponse("GOOGLE_AUTH_FAILED", ex.getMessage()));
+    }
+
+    @ExceptionHandler(GoogleProfileIncompleteException.class)
+    public ResponseEntity<ApiErrorResponse> handleGoogleProfileIncomplete(GoogleProfileIncompleteException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ApiErrorResponse("PROFILE_INCOMPLETE", ex.getMessage()));
     }
 
     @ExceptionHandler(UserNotFoundException.class)

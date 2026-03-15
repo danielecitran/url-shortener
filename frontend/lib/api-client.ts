@@ -86,6 +86,18 @@ export async function login(input: { email: string; password: string }) {
   });
 }
 
+export async function loginWithGoogle(input: {
+  idToken: string;
+  rememberMe: boolean;
+  firstName?: string;
+  lastName?: string;
+}) {
+  return request<{ userId: number; message: string }>("/api/auth/google", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export async function logout() {
   return request<void>("/api/auth/logout", {
     method: "POST",

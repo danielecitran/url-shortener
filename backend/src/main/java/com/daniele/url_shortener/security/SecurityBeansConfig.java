@@ -44,6 +44,7 @@ public class SecurityBeansConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/register").permitAll()
                         .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/google").permitAll()
                         .requestMatchers("/api/auth/email-availability").permitAll()
                         .requestMatchers("/api/auth/logout").permitAll()
                         .requestMatchers("/error").permitAll()

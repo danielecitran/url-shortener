@@ -7,8 +7,10 @@ import { Check, Loader2 } from "lucide-react";
 import {
   ApiError,
   checkEmailAvailability,
+  loginWithGoogle,
   register as registerRequest,
 } from "@/lib/api-client";
+import { decodeGoogleTokenPayload, getGoogleIdToken } from "@/lib/google-auth";
 import { useAuth } from "@/lib/auth-context";
 
 export interface Testimonial {
@@ -137,7 +139,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
   onSignInLinkClick,
 }) => {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, refreshCurrentUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [imageShifted, setImageShifted] = useState(false);
@@ -155,6 +157,9 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
   const [lastNameTouched, setLastNameTouched] = useState(false);
   const [isSubmittingRegistration, setIsSubmittingRegistration] = useState(false);
   const [registrationBackendError, setRegistrationBackendError] = useState(false);
+  const [isSubmittingGoogle, setIsSubmittingGoogle] = useState(false);
+  const [googleIdToken, setGoogleIdToken] = useState<string | null>(null);
+  const [isGoogleProfileCompletion, setIsGoogleProfileCompletion] = useState(false);
   const successRedirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -172,9 +177,13 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
     hasUpperLower &&
     password.length <= 100 &&
     !emailInUse &&
+    !isSubmittingGoogle &&
     !isCheckingEmail;
   const canSubmitStepTwo =
-    !firstNameError && !lastNameError && !isSubmittingRegistration;
+    !firstNameError &&
+    !lastNameError &&
+    !isSubmittingRegistration &&
+    !isSubmittingGoogle;
 
   useEffect(() => {
     return () => {
@@ -182,6 +191,31 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
         clearTimeout(successRedirectTimeoutRef.current);
       }
     };
+  }, []);
+
+  const moveToGoogleNameStep = (idToken: string) => {
+    const payload = decodeGoogleTokenPayload(idToken);
+    const tokenEmail =
+      typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
+
+    setGoogleIdToken(idToken);
+    setIsGoogleProfileCompletion(true);
+    setEmail(tokenEmail);
+    // New Google users should actively enter names in step 2.
+    setFirstName("");
+    setLastName("");
+    setFirstNameTouched(false);
+    setLastNameTouched(false);
+    setImageShifted(true);
+    setStep(2);
+  };
+
+  useEffect(() => {
+    const pendingGoogleToken = sessionStorage.getItem("shortr.google.pendingIdToken");
+    if (!pendingGoogleToken) return;
+
+    sessionStorage.removeItem("shortr.google.pendingIdToken");
+    moveToGoogleNameStep(pendingGoogleToken);
   }, []);
 
   const handleStepOneSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -220,24 +254,35 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
     if (!canSubmitStepTwo) return;
 
     try {
-      setIsSubmittingRegistration(true);
-      const payload = {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim().toLowerCase(),
-        password,
-      };
-      if (onSignUp) {
-        await onSignUp(payload);
+      if (isGoogleProfileCompletion && googleIdToken) {
+        setIsSubmittingGoogle(true);
+        await loginWithGoogle({
+          idToken: googleIdToken,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          rememberMe: true,
+        });
+        await refreshCurrentUser();
       } else {
-        await registerRequest(payload);
-      }
+        setIsSubmittingRegistration(true);
+        const payload = {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        };
+        if (onSignUp) {
+          await onSignUp(payload);
+        } else {
+          await registerRequest(payload);
+        }
 
-      // Registration creates the account, then we sign in so header/auth state updates.
-      await login({
-        email: payload.email,
-        password: payload.password,
-      });
+        // Registration creates the account, then we sign in so header/auth state updates.
+        await login({
+          email: payload.email,
+          password: payload.password,
+        });
+      }
 
       setStep(3);
       successRedirectTimeoutRef.current = setTimeout(() => {
@@ -247,6 +292,47 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
       setRegistrationBackendError(true);
     } finally {
       setIsSubmittingRegistration(false);
+      setIsSubmittingGoogle(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    setRegistrationBackendError(false);
+    setBackendCheckError(false);
+    setEmailInUse(false);
+    setIsGoogleProfileCompletion(false);
+
+    try {
+      setIsSubmittingGoogle(true);
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      if (!clientId) {
+        throw new Error("Google Client ID fehlt");
+      }
+
+      const idToken = await getGoogleIdToken(clientId);
+
+      try {
+        await loginWithGoogle({
+          idToken,
+          rememberMe: true,
+        });
+
+        await refreshCurrentUser();
+        setStep(3);
+        successRedirectTimeoutRef.current = setTimeout(() => {
+          router.push("/");
+        }, 2300);
+      } catch (error) {
+        if (error instanceof ApiError && error.code === "PROFILE_INCOMPLETE") {
+          moveToGoogleNameStep(idToken);
+          return;
+        }
+        throw error;
+      }
+    } catch {
+      setBackendCheckError(true);
+    } finally {
+      setIsSubmittingGoogle(false);
     }
   };
 
@@ -262,6 +348,8 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
             if (step === 2) {
               setImageShifted(false);
               setStep(1);
+              setIsGoogleProfileCompletion(false);
+              setGoogleIdToken(null);
               return;
             }
             router.push("/");
@@ -554,8 +642,13 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                   </div>
 
                   <button
-                    onClick={onGoogleSignUp}
-                    className="animate-element animate-delay-700 flex w-full items-center justify-center gap-3 rounded-full border border-white/15 bg-white/5 py-4 text-white transition-colors hover:bg-white/10"
+                    type="button"
+                    onClick={() => {
+                      void handleGoogleSignUp();
+                      onGoogleSignUp?.();
+                    }}
+                    disabled={isSubmittingGoogle}
+                    className="animate-element animate-delay-700 flex w-full cursor-pointer items-center justify-center gap-3 rounded-full border border-white/15 bg-white/5 py-4 text-white transition-colors hover:bg-white/10 disabled:cursor-default disabled:opacity-60"
                   >
                     <Image
                       src="/google.svg"
@@ -564,7 +657,11 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                       height={20}
                       aria-hidden="true"
                     />
-                    Mit Google fortfahren
+                    {isSubmittingGoogle ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      "Mit Google fortfahren"
+                    )}
                   </button>
 
                   <p className="animate-element animate-delay-800 text-center text-sm text-white/55">
@@ -688,7 +785,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                           : "cursor-default bg-white/18 text-white/45 shadow-none"
                       }`}
                     >
-                      {isSubmittingRegistration ? (
+                      {isSubmittingRegistration || isSubmittingGoogle ? (
                         <span className="inline-flex items-center">
                           <Loader2 className="h-5 w-5 animate-spin" />
                         </span>

@@ -2,6 +2,7 @@ package com.daniele.url_shortener.auth;
 
 import com.daniele.url_shortener.auth.dto.CurrentUserResponse;
 import com.daniele.url_shortener.auth.dto.EmailAvailabilityResponse;
+import com.daniele.url_shortener.auth.dto.GoogleAuthRequest;
 import com.daniele.url_shortener.auth.dto.LoginRequest;
 import com.daniele.url_shortener.auth.dto.LoginResponse;
 import com.daniele.url_shortener.auth.dto.RegisterRequest;
@@ -65,15 +66,22 @@ public class AuthController {
         User user = authService.login(request);
         String token = jwtService.generateToken(user.getUserId(), user.getEmail());
 
-        ResponseCookie authCookie = ResponseCookie.from(jwtService.getCookieName(), token)
-                .httpOnly(true)
-                .secure(cookieSecure)
-                .path("/")
-                .sameSite("Lax")
-                .maxAge(jwtService.getExpirationSeconds())
-                .build();
+        ResponseCookie authCookie = buildAuthCookie(token, true);
 
         LoginResponse response = new LoginResponse(user.getUserId(), "Login erfolgreich");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, authCookie.toString())
+                .body(response);
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<LoginResponse> google(@Valid @RequestBody GoogleAuthRequest request) {
+        User user = authService.loginWithGoogle(request);
+        String token = jwtService.generateToken(user.getUserId(), user.getEmail());
+        boolean rememberMe = request.rememberMe() == null || request.rememberMe();
+        ResponseCookie authCookie = buildAuthCookie(token, rememberMe);
+
+        LoginResponse response = new LoginResponse(user.getUserId(), "Google Login erfolgreich");
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, authCookie.toString())
                 .body(response);
@@ -92,5 +100,19 @@ public class AuthController {
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
                 .build();
+    }
+
+    private ResponseCookie buildAuthCookie(String token, boolean rememberMe) {
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(jwtService.getCookieName(), token)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite("Lax");
+
+        if (rememberMe) {
+            builder.maxAge(jwtService.getExpirationSeconds());
+        }
+
+        return builder.build();
     }
 }
