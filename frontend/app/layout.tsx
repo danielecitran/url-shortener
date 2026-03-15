@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { AppShell } from "@/components/app-shell";
+import { BuyMeCoffeeWidget } from "@/components/buy-me-coffee-widget";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -36,6 +37,7 @@ export default function RootLayout({
       >
         <Providers>
           <AppShell>{children}</AppShell>
+          <BuyMeCoffeeWidget />
         </Providers>
       </body>
     </html>

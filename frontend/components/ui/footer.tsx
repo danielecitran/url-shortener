@@ -54,17 +54,29 @@ export function Footer() {
           </a>
         </nav>
 
-        <p className="mt-6 text-xs text-white/45">
-          Entwickelt von{" "}
-          <a
-            href="https://www.linkedin.com/in/danielecitran/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white/45 underline underline-offset-2 transition-colors hover:text-white/65"
-          >
-            Daniele Citran
-          </a>
-        </p>
+        <div className="mt-6 space-y-1 text-xs text-white/45">
+          <p>
+            Entwickelt von{" "}
+            <a
+              href="https://www.linkedin.com/in/danielecitran/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/45 underline underline-offset-2 transition-colors hover:text-white/65"
+            >
+              Daniele Citran
+            </a>
+          </p>
+          <p>
+            <a
+              href="https://buymeacoffee.com/danielecitran"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/45 underline underline-offset-2 transition-colors hover:text-white/65"
+            >
+              Buy Me a Coffee
+            </a>
+          </p>
+        </div>
       </div>
     </footer>
   );

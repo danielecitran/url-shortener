@@ -22,6 +22,15 @@ export type CurrentUser = {
   email: string;
 };
 
+export type CreateShortLinkResponse = {
+  linkId: number;
+  originalUrl: string;
+  shortCode: string;
+  shortUrl: string;
+  clickCount: number;
+  createdAt: string;
+};
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -106,5 +115,12 @@ export async function logout() {
 
 export async function getCurrentUser() {
   return request<CurrentUser>("/api/auth/me");
+}
+
+export async function createShortLink(input: { originalUrl: string }) {
+  return request<CreateShortLinkResponse>("/api/links", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 

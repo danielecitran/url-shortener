@@ -48,7 +48,7 @@ export function GlowingEffectFeatures() {
           />
         }
         title="Sichere Verwaltung"
-        description="Deaktiviere Links jederzeit und behalte die volle Kontrolle."
+        description="Lösche deine gekürzten Links jederzeit und behalte die volle Kontrolle."
       />
       <GridItem
         area="md:[grid-area:2/7/3/13] xl:[grid-area:1/8/2/12]"

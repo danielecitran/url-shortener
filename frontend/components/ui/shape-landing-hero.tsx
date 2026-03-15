@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, type Variants } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
@@ -85,6 +85,7 @@ function HeroGeometric({
 }) {
   const { user, isAuthenticated } = useAuth();
   const [isShortenModalOpen, setIsShortenModalOpen] = useState(false);
+  const PENDING_SHORTEN_URL_KEY = "shortr.shorten.pendingUrl";
   const fadeUpEase: [number, number, number, number] = [0.25, 0.4, 0.25, 1];
   const fadeUpVariants: Variants = {
     hidden: { opacity: 0, y: 30 },
@@ -112,6 +113,18 @@ function HeroGeometric({
     isAuthenticated && user ? getTimeBasedGreeting() : title1;
   const resolvedTitle2 =
     isAuthenticated && user?.firstName?.trim() ? user.firstName.trim() : title2;
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (typeof window === "undefined") return;
+    const pendingUrl = sessionStorage.getItem(PENDING_SHORTEN_URL_KEY);
+    if (pendingUrl) {
+      const timeoutId = window.setTimeout(() => {
+        setIsShortenModalOpen(true);
+      }, 0);
+      return () => window.clearTimeout(timeoutId);
+    }
+  }, [isAuthenticated]);
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#030303]">
@@ -203,7 +216,8 @@ function HeroGeometric({
             >
               <p className="text-base sm:text-lg md:text-xl text-white/40 mb-8 leading-relaxed font-light tracking-wide max-w-xl mx-auto px-4">
                 Kürze lange Links in Sekunden und teile sie einfach mit deinem
-                Team, Kunden oder deiner Community.
+                Team, Kunden oder deiner Community inklusive Statistiken und
+                QR-Codes.
               </p>
             </motion.div>
           )}
