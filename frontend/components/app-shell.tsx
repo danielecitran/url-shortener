@@ -11,7 +11,10 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
-  const hideChrome = pathname === "/anmelden" || pathname === "/registrieren";
+  const hideChrome =
+    pathname === "/anmelden" ||
+    pathname === "/registrieren" ||
+    pathname === "/abmelden";
 
   return (
     <>

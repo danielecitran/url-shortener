@@ -23,11 +23,17 @@ type AuthContextValue = {
   status: AuthStatus;
   isAuthenticated: boolean;
   refreshCurrentUser: () => Promise<void>;
-  login: (input: { email: string; password: string }) => Promise<void>;
+  login: (input: {
+    email: string;
+    password: string;
+    rememberMe?: boolean;
+  }) => Promise<void>;
   logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const LOGIN_MODE_KEY = "shortr.loginMode";
+const SESSION_MARKER_KEY = "shortr.sessionMarker";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -50,8 +56,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(
-    async (input: { email: string; password: string }) => {
-      await loginRequest(input);
+    async (input: { email: string; password: string; rememberMe?: boolean }) => {
+      const rememberMe = input.rememberMe ?? true;
+      await loginRequest({ email: input.email, password: input.password });
+
+      localStorage.setItem(LOGIN_MODE_KEY, rememberMe ? "remember" : "session");
+      sessionStorage.setItem(SESSION_MARKER_KEY, "1");
       await refreshCurrentUser();
     },
     [refreshCurrentUser],
@@ -59,6 +69,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     await logoutRequest();
+    localStorage.removeItem(LOGIN_MODE_KEY);
+    sessionStorage.removeItem(SESSION_MARKER_KEY);
     setUser(null);
     setStatus("unauthenticated");
   }, []);
@@ -67,8 +79,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let isActive = true;
 
     void getCurrentUser()
-      .then((currentUser) => {
+      .then(async (currentUser) => {
         if (!isActive) return;
+
+        const loginMode = localStorage.getItem(LOGIN_MODE_KEY);
+        const hasSessionMarker =
+          sessionStorage.getItem(SESSION_MARKER_KEY) === "1";
+
+        // Legacy fallback: existing logins before this feature default to "remember".
+        if (!loginMode) {
+          localStorage.setItem(LOGIN_MODE_KEY, "remember");
+          sessionStorage.setItem(SESSION_MARKER_KEY, "1");
+        }
+
+        if (loginMode === "session" && !hasSessionMarker) {
+          await logoutRequest();
+          if (!isActive) return;
+          localStorage.removeItem(LOGIN_MODE_KEY);
+          sessionStorage.removeItem(SESSION_MARKER_KEY);
+          setUser(null);
+          setStatus("unauthenticated");
+          return;
+        }
+
+        if (loginMode === "remember" && !hasSessionMarker) {
+          sessionStorage.setItem(SESSION_MARKER_KEY, "1");
+        }
+
         setUser(currentUser);
         setStatus("authenticated");
       })

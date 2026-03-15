@@ -1,10 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, LoaderCircle } from "lucide-react";
-import { ApiError, checkEmailAvailability } from "@/lib/api-client";
+import { Check, Loader2 } from "lucide-react";
+import {
+  ApiError,
+  checkEmailAvailability,
+  register as registerRequest,
+} from "@/lib/api-client";
+import { useAuth } from "@/lib/auth-context";
 
 export interface Testimonial {
   avatarSrc: string;
@@ -18,7 +23,12 @@ interface SignUpPageProps {
   description?: React.ReactNode;
   heroImageSrc?: string;
   testimonials?: Testimonial[];
-  onSignUp?: (event: React.FormEvent<HTMLFormElement>) => void;
+  onSignUp?: (input: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+  }) => void | Promise<void>;
   onGoogleSignUp?: () => void;
   onSignInLinkClick?: () => void;
 }
@@ -127,8 +137,9 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
   onSignInLinkClick,
 }) => {
   const router = useRouter();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [imageShifted, setImageShifted] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -137,11 +148,16 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [emailInUse, setEmailInUse] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-  const [emailCheckError, setEmailCheckError] = useState<string | null>(null);
+  const [backendCheckError, setBackendCheckError] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [firstNameTouched, setFirstNameTouched] = useState(false);
   const [lastNameTouched, setLastNameTouched] = useState(false);
+  const [isSubmittingRegistration, setIsSubmittingRegistration] = useState(false);
+  const [registrationBackendError, setRegistrationBackendError] = useState(false);
+  const successRedirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const emailHasError = emailTouched && !isValidEmail(email);
   const hasMinLength = password.length >= 8;
   const hasUpperLower = /[a-z]/.test(password) && /[A-Z]/.test(password);
@@ -157,13 +173,22 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
     password.length <= 100 &&
     !emailInUse &&
     !isCheckingEmail;
-  const canSubmitStepTwo = !firstNameError && !lastNameError;
+  const canSubmitStepTwo =
+    !firstNameError && !lastNameError && !isSubmittingRegistration;
+
+  useEffect(() => {
+    return () => {
+      if (successRedirectTimeoutRef.current) {
+        clearTimeout(successRedirectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleStepOneSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setEmailTouched(true);
     setEmailInUse(false);
-    setEmailCheckError(null);
+    setBackendCheckError(false);
     if (!isValidEmail(email) || !hasMinLength || !hasUpperLower || password.length > 100) return;
 
     try {
@@ -181,18 +206,48 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
         setEmailInUse(true);
         return;
       }
-      setEmailCheckError("E-Mail konnte nicht geprüft werden. Bitte versuche es erneut.");
+      setBackendCheckError(true);
     } finally {
       setIsCheckingEmail(false);
     }
   };
 
-  const handleFinalSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleFinalSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFirstNameTouched(true);
     setLastNameTouched(true);
+    setRegistrationBackendError(false);
     if (!canSubmitStepTwo) return;
-    onSignUp?.(event);
+
+    try {
+      setIsSubmittingRegistration(true);
+      const payload = {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+      };
+      if (onSignUp) {
+        await onSignUp(payload);
+      } else {
+        await registerRequest(payload);
+      }
+
+      // Registration creates the account, then we sign in so header/auth state updates.
+      await login({
+        email: payload.email,
+        password: payload.password,
+      });
+
+      setStep(3);
+      successRedirectTimeoutRef.current = setTimeout(() => {
+        router.push("/");
+      }, 2300);
+    } catch {
+      setRegistrationBackendError(true);
+    } finally {
+      setIsSubmittingRegistration(false);
+    }
   };
 
   return (
@@ -258,10 +313,10 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                           onChange={(event) => {
                             setEmail(event.target.value);
                             if (emailInUse) setEmailInUse(false);
-                            if (emailCheckError) setEmailCheckError(null);
+                            if (backendCheckError) setBackendCheckError(false);
                           }}
                           onBlur={() => setEmailTouched(true)}
-                          aria-invalid={emailHasError || emailInUse || !!emailCheckError}
+                          aria-invalid={emailHasError || emailInUse}
                           className="w-full rounded-2xl bg-transparent p-4 text-sm text-white placeholder:text-white/35 focus:outline-none"
                         />
                       </GlassInputWrapper>
@@ -295,18 +350,6 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                           </Link>
                         </p>
                       )}
-                      {!emailHasError && !emailInUse && emailCheckError && (
-                        <p className="mt-2 flex items-center gap-1.5 text-xs text-rose-400">
-                          <Image
-                            src="/info_red.svg"
-                            alt=""
-                            width={14}
-                            height={14}
-                            aria-hidden="true"
-                          />
-                          {emailCheckError}
-                        </p>
-                      )}
                     </div>
 
                     <div className="animate-element animate-delay-400">
@@ -330,9 +373,10 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                               type={showPassword ? "text" : "password"}
                               placeholder="Passwort eingeben"
                               value={password}
-                              onChange={(event) =>
-                                setPassword(event.target.value)
-                              }
+                              onChange={(event) => {
+                                setPassword(event.target.value);
+                                if (backendCheckError) setBackendCheckError(false);
+                              }}
                               onBlur={() => setPasswordTouched(true)}
                               className="w-full rounded-2xl bg-transparent p-4 pr-12 text-sm text-white placeholder:text-white/35 focus:outline-none"
                             />
@@ -435,6 +479,19 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                         </p>
                       )}
 
+                      {backendCheckError && (
+                        <p className="mt-2 flex items-center gap-1.5 text-xs text-rose-400">
+                          <Image
+                            src="/info_red.svg"
+                            alt=""
+                            width={14}
+                            height={14}
+                            aria-hidden="true"
+                          />
+                          Es ist ein Fehler aufgetreten, bitte versuche es später erneut
+                        </p>
+                      )}
+
                       {password.length > 0 && isPasswordFieldActive && (
                         <div className="mt-3 rounded-2xl border border-white/12 bg-[#101010] p-3.5 text-xs text-white/75 md:hidden">
                           <p className="mb-2 font-medium text-white/85">
@@ -473,7 +530,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                     <button
                       type="submit"
                       disabled={!canContinueStepOne}
-                      className={`animate-element animate-delay-500 w-full rounded-full py-4 font-semibold transition-all duration-300 ease-out ${
+                      className={`animate-element animate-delay-500 flex w-full items-center justify-center rounded-full py-4 font-semibold transition-all duration-300 ease-out ${
                         canContinueStepOne
                           ? "cursor-pointer bg-white text-black shadow-lg shadow-black/30 hover:bg-white/90"
                           : "cursor-default bg-white/18 text-white/45 shadow-none"
@@ -481,7 +538,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                     >
                       {isCheckingEmail ? (
                         <span className="inline-flex items-center">
-                          <LoaderCircle className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-5 w-5 animate-spin" />
                         </span>
                       ) : (
                         "Weiter"
@@ -521,7 +578,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                     </Link>
                   </p>
                 </motion.div>
-              ) : (
+              ) : step === 2 ? (
                 <motion.div
                   key="step-2"
                   initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
@@ -549,7 +606,12 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                           type="text"
                           placeholder="Vornamen eingeben"
                           value={firstName}
-                          onChange={(event) => setFirstName(event.target.value)}
+                          onChange={(event) => {
+                            setFirstName(event.target.value);
+                            if (registrationBackendError) {
+                              setRegistrationBackendError(false);
+                            }
+                          }}
                           onBlur={() => setFirstNameTouched(true)}
                           aria-invalid={firstNameHasError}
                           className="w-full rounded-2xl bg-transparent p-4 text-sm text-white placeholder:text-white/35 focus:outline-none"
@@ -579,7 +641,12 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                           type="text"
                           placeholder="Nachnamen eingeben"
                           value={lastName}
-                          onChange={(event) => setLastName(event.target.value)}
+                          onChange={(event) => {
+                            setLastName(event.target.value);
+                            if (registrationBackendError) {
+                              setRegistrationBackendError(false);
+                            }
+                          }}
                           onBlur={() => setLastNameTouched(true)}
                           aria-invalid={lastNameHasError}
                           className="w-full rounded-2xl bg-transparent p-4 text-sm text-white placeholder:text-white/35 focus:outline-none"
@@ -597,18 +664,37 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                           {lastNameError}
                         </p>
                       )}
+                      {registrationBackendError && (
+                        <p className="mt-2 flex items-center gap-1.5 text-xs text-rose-400">
+                          <Image
+                            src="/info_red.svg"
+                            alt=""
+                            width={14}
+                            height={14}
+                            aria-hidden="true"
+                          />
+                          Es ist ein Fehler aufgetreten, bitte versuche es später
+                          erneut
+                        </p>
+                      )}
                     </div>
 
                     <button
                       type="submit"
                       disabled={!canSubmitStepTwo}
-                      className={`animate-element animate-delay-500 w-full rounded-full py-4 font-semibold transition-all duration-300 ease-out ${
+                      className={`animate-element animate-delay-500 flex w-full items-center justify-center rounded-full py-4 font-semibold transition-all duration-300 ease-out ${
                         canSubmitStepTwo
                           ? "cursor-pointer bg-white text-black shadow-lg shadow-black/30 hover:bg-white/90"
                           : "cursor-default bg-white/18 text-white/45 shadow-none"
                       }`}
                     >
-                      Registrieren
+                      {isSubmittingRegistration ? (
+                        <span className="inline-flex items-center">
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        </span>
+                      ) : (
+                        "Registrieren"
+                      )}
                     </button>
 
                     <p className="mt-3 text-center text-[11px] leading-relaxed text-white/40">
@@ -622,6 +708,60 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                       zu.
                     </p>
                   </form>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="step-3"
+                  initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
+                  transition={{ duration: 0.34, ease: [0.22, 0.61, 0.36, 1] }}
+                  className="flex min-h-[320px] items-center justify-center"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                    animate={{
+                      opacity: [0, 1, 1],
+                      scale: [0.9, 1.02, 1],
+                      y: [10, 0, 0],
+                    }}
+                    transition={{
+                      duration: 0.62,
+                      times: [0, 0.62, 1],
+                      ease: [0.22, 0.61, 0.36, 1],
+                    }}
+                  >
+                    <motion.svg
+                      width="96"
+                      height="96"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <motion.path
+                        d="M20 6L9 17L4 12"
+                        stroke="rgb(110 231 183)"
+                        strokeWidth="2.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        initial={{ pathLength: 0, opacity: 0 }}
+                        animate={{ pathLength: 1, opacity: [0, 1, 1, 0] }}
+                        transition={{
+                          pathLength: {
+                            duration: 0.72,
+                            ease: [0.22, 0.61, 0.36, 1],
+                            delay: 0.12,
+                          },
+                          opacity: {
+                            duration: 2.2,
+                            times: [0, 0.2, 0.92, 1],
+                            ease: [0.22, 0.61, 0.36, 1],
+                          },
+                        }}
+                      />
+                    </motion.svg>
+                  </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>

@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { ApiError } from "@/lib/api-client";
+import { useAuth } from "@/lib/auth-context";
 
 // --- TYPE DEFINITIONS ---
 
@@ -70,7 +74,11 @@ interface SignInPageProps {
   secondaryActionHref?: string;
   heroImageSrc?: string;
   testimonials?: Testimonial[];
-  onSignIn?: (event: React.FormEvent<HTMLFormElement>) => void;
+  onSignIn?: (input: {
+    email: string;
+    password: string;
+    rememberMe: boolean;
+  }) => void | Promise<void>;
   onGoogleSignIn?: () => void;
   onResetPassword?: () => void;
   onCreateAccount?: () => void;
@@ -130,21 +138,55 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   onGoogleSignIn,
   onCreateAccount,
 }) => {
+  const router = useRouter();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [emailTouched, setEmailTouched] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [credentialsError, setCredentialsError] = useState(false);
+  const [backendError, setBackendError] = useState(false);
   const emailHasError = emailTouched && !isValidEmail(email);
-  const canSubmit = isValidEmail(email) && password.trim().length > 0;
+  const canSubmit =
+    isValidEmail(email) && password.trim().length > 0 && !isSubmitting;
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    setCredentialsError(false);
+    setBackendError(false);
+
     if (!canSubmit) {
-      event.preventDefault();
       setEmailTouched(true);
       return;
     }
 
-    onSignIn?.(event);
+    try {
+      setIsSubmitting(true);
+      const payload = {
+        email: email.trim().toLowerCase(),
+        password,
+        rememberMe,
+      };
+
+      if (onSignIn) {
+        await onSignIn(payload);
+      } else {
+        await login(payload);
+      }
+
+      router.push("/");
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "INVALID_CREDENTIALS") {
+        setCredentialsError(true);
+      } else {
+        setBackendError(true);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -184,7 +226,11 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                     type="email"
                     placeholder="E-Mail-Adresse eingeben"
                     value={email}
-                    onChange={(event) => setEmail(event.target.value)}
+                    onChange={(event) => {
+                      setEmail(event.target.value);
+                      if (credentialsError) setCredentialsError(false);
+                      if (backendError) setBackendError(false);
+                    }}
                     onBlur={() => setEmailTouched(true)}
                     aria-invalid={emailHasError}
                     className="w-full rounded-2xl bg-transparent p-4 text-sm text-white placeholder:text-white/35 focus:outline-none"
@@ -215,7 +261,11 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                       type={showPassword ? "text" : "password"}
                       placeholder="Passwort eingeben"
                       value={password}
-                      onChange={(event) => setPassword(event.target.value)}
+                      onChange={(event) => {
+                        setPassword(event.target.value);
+                        if (credentialsError) setCredentialsError(false);
+                        if (backendError) setBackendError(false);
+                      }}
                       className="w-full rounded-2xl bg-transparent p-4 pr-12 text-sm text-white placeholder:text-white/35 focus:outline-none"
                     />
                     <button
@@ -243,6 +293,30 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                     </button>
                   </div>
                 </GlassInputWrapper>
+                {credentialsError && (
+                  <p className="mt-2 flex items-center gap-1.5 text-xs text-rose-400">
+                    <Image
+                      src="/info_red.svg"
+                      alt=""
+                      width={14}
+                      height={14}
+                      aria-hidden="true"
+                    />
+                    E-Mail oder Passwort ist falsch
+                  </p>
+                )}
+                {backendError && (
+                  <p className="mt-2 flex items-center gap-1.5 text-xs text-rose-400">
+                    <Image
+                      src="/info_red.svg"
+                      alt=""
+                      width={14}
+                      height={14}
+                      aria-hidden="true"
+                    />
+                    Es ist ein Fehler aufgetreten, bitte versuche es später erneut
+                  </p>
+                )}
               </div>
 
               <div className="animate-element animate-delay-500 flex items-center text-sm">
@@ -250,6 +324,8 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                   <input
                     type="checkbox"
                     name="rememberMe"
+                    checked={rememberMe}
+                    onChange={(event) => setRememberMe(event.target.checked)}
                     className="h-3.5 w-3.5 rounded border-white/30 bg-transparent accent-indigo-300 focus-visible:ring-2 focus-visible:ring-indigo-300/40 focus-visible:ring-offset-0"
                   />
                   <span className="text-white/90">{rememberMeLabel}</span>
@@ -259,13 +335,19 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className={`animate-element animate-delay-600 w-full rounded-full py-4 font-semibold transition-all duration-300 ease-out ${
+                className={`animate-element animate-delay-600 flex w-full items-center justify-center rounded-full py-4 font-semibold transition-all duration-300 ease-out ${
                   canSubmit
                     ? "cursor-pointer bg-white text-black shadow-lg shadow-black/30 hover:bg-white/90"
                     : "cursor-default bg-white/18 text-white/45 shadow-none"
                 }`}
               >
-                {submitLabel}
+                {isSubmitting ? (
+                  <span className="inline-flex items-center">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  </span>
+                ) : (
+                  submitLabel
+                )}
               </button>
             </form>
 

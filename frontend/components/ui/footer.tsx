@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="dark w-full border-t border-white/10 bg-[#050505] px-4 py-14">
+    <footer className="dark w-full border-t border-white/10 bg-[#050505] px-4 pt-14 pb-6">
       <div className="mx-auto flex w-full max-w-6xl flex-col items-center text-center">
         <Link href="/#top" aria-label="Zur Startseite nach oben">
           <Image
@@ -46,6 +46,18 @@ export function Footer() {
             Datenschutz
           </a>
         </nav>
+
+        <p className="mt-6 text-xs text-white/45">
+          Entwickelt von{" "}
+          <a
+            href="https://www.linkedin.com/in/danielecitran/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white/45 underline underline-offset-2 transition-colors hover:text-white/65"
+          >
+            Daniele Citran
+          </a>
+        </p>
       </div>
     </footer>
   );

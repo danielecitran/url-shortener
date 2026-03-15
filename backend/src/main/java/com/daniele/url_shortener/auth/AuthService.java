@@ -24,14 +24,16 @@ public class AuthService {
     @Transactional
     public Long register(RegisterRequest request) {
         String normalizedEmail = request.email().trim().toLowerCase();
+        String normalizedFirstName = normalizeName(request.firstName());
+        String normalizedLastName = normalizeName(request.lastName());
 
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new EmailAlreadyExistsException("E-Mail bereits vergeben. Bitte loggen Sie sich ein.");
         }
 
         User user = new User();
-        user.setFirstName(request.firstName().trim());
-        user.setLastName(request.lastName().trim());
+        user.setFirstName(normalizedFirstName);
+        user.setLastName(normalizedLastName);
         user.setEmail(normalizedEmail);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
 
@@ -71,5 +73,28 @@ public class AuthService {
     public boolean isEmailAvailable(String email) {
         String normalizedEmail = email.trim().toLowerCase();
         return !userRepository.existsByEmail(normalizedEmail);
+    }
+
+    private String normalizeName(String rawName) {
+        String trimmed = rawName.trim();
+        StringBuilder result = new StringBuilder(trimmed.length());
+        boolean uppercaseNext = true;
+
+        for (int i = 0; i < trimmed.length(); i++) {
+            char current = trimmed.charAt(i);
+
+            if (Character.isLetter(current)) {
+                result.append(
+                        uppercaseNext ? Character.toUpperCase(current) : Character.toLowerCase(current)
+                );
+                uppercaseNext = false;
+                continue;
+            }
+
+            result.append(current);
+            uppercaseNext = current == ' ' || current == '-';
+        }
+
+        return result.toString();
     }
 }

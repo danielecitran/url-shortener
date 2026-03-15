@@ -2,9 +2,11 @@
 
 import { motion, type Variants } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth-context";
 
 function ElegantShape({
   className,
@@ -79,6 +81,7 @@ function HeroGeometric({
   title1?: string;
   title2?: string;
 }) {
+  const { user, isAuthenticated } = useAuth();
   const fadeUpEase: [number, number, number, number] = [0.25, 0.4, 0.25, 1];
   const fadeUpVariants: Variants = {
     hidden: { opacity: 0, y: 30 },
@@ -92,6 +95,20 @@ function HeroGeometric({
       },
     }),
   };
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours();
+
+    if (hour >= 5 && hour <= 11) return "Guten Morgen,";
+    if (hour >= 12 && hour <= 13) return "Guten Tag,";
+    if (hour >= 14 && hour <= 17) return "Schönen Nachmittag,";
+    if (hour >= 18 && hour <= 23) return "Guten Abend,";
+    return "Gute Nacht,";
+  };
+
+  const resolvedTitle1 =
+    isAuthenticated && user ? getTimeBasedGreeting() : title1;
+  const resolvedTitle2 =
+    isAuthenticated && user?.firstName?.trim() ? user.firstName.trim() : title2;
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#030303]">
@@ -145,7 +162,14 @@ function HeroGeometric({
       </div>
 
       <div className="relative z-10 container mx-auto flex min-h-[calc(100vh-3.5rem)] items-center px-4 md:px-6">
-        <div className="max-w-3xl mx-auto translate-y-4 text-center md:translate-y-6">
+        <div
+          className={cn(
+            "max-w-3xl mx-auto text-center",
+            isAuthenticated
+              ? "-translate-y-5 md:-translate-y-7"
+              : "translate-y-4 md:translate-y-6",
+          )}
+        >
           <motion.div
             custom={1}
             variants={fadeUpVariants}
@@ -154,7 +178,7 @@ function HeroGeometric({
           >
             <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold leading-[1.05] mb-6 md:mb-8 tracking-tight">
               <span className="bg-clip-text text-transparent bg-linear-to-b from-white to-white/80">
-                {title1}
+                {resolvedTitle1}
               </span>
               <br />
               <span
@@ -162,29 +186,36 @@ function HeroGeometric({
                   "bg-clip-text text-transparent bg-linear-to-r from-indigo-300 via-white/90 to-rose-300 ",
                 )}
               >
-                {title2}
+                {resolvedTitle2}
               </span>
             </h1>
           </motion.div>
 
-          <motion.div
-            custom={2}
-            variants={fadeUpVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <p className="text-base sm:text-lg md:text-xl text-white/40 mb-8 leading-relaxed font-light tracking-wide max-w-xl mx-auto px-4">
-              Kürze lange Links in Sekunden und teile sie einfach mit deinem
-              Team, Kunden oder deiner Community.
-            </p>
-          </motion.div>
+          {!isAuthenticated && (
+            <motion.div
+              custom={2}
+              variants={fadeUpVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              <p className="text-base sm:text-lg md:text-xl text-white/40 mb-8 leading-relaxed font-light tracking-wide max-w-xl mx-auto px-4">
+                Kürze lange Links in Sekunden und teile sie einfach mit deinem
+                Team, Kunden oder deiner Community.
+              </p>
+            </motion.div>
+          )}
 
           <motion.div
             custom={3}
             variants={fadeUpVariants}
             initial="hidden"
             animate="visible"
-            className="dark"
+            className={cn(
+              "dark",
+              isAuthenticated
+                ? "mb-2 flex items-center justify-center gap-3"
+                : "",
+            )}
           >
             <Button
               size="lg"
@@ -193,42 +224,64 @@ function HeroGeometric({
               <Image
                 src="/scissors.svg"
                 alt=""
-                width={18}
-                height={18}
-                className="h-[18px] w-[18px]"
+                width={15}
+                height={15}
+                className="h-[15px] w-[15px]"
                 aria-hidden="true"
               />
               URL kürzen
             </Button>
+            {isAuthenticated && (
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="gap-2 border-white/20 bg-white/5 px-7 text-base font-semibold text-white hover:bg-white/12 hover:text-white"
+              >
+                <Link href="/dashboard">
+                  <Image
+                    src="/arrow_outward_white.svg"
+                    alt=""
+                    width={18}
+                    height={18}
+                    className="h-[18px] w-[18px] opacity-90"
+                    aria-hidden="true"
+                  />
+                  Zum Dashboard
+                </Link>
+              </Button>
+            )}
           </motion.div>
 
-          <motion.a
-            custom={4}
-            variants={fadeUpVariants}
-            initial="hidden"
-            animate="visible"
-            href="#features"
-            aria-label="Zu den Funktionen scrollen"
-            className="mt-8 inline-flex items-center justify-center rounded-full p-2 text-white/45 transition-colors hover:text-white/75"
-          >
-            <motion.span
-              animate={{
-                opacity: [0.45, 0.85, 0.45],
-                filter: [
-                  "drop-shadow(0 0 0px rgba(255,255,255,0))",
-                  "drop-shadow(0 0 8px rgba(255,255,255,0.28))",
-                  "drop-shadow(0 0 0px rgba(255,255,255,0))",
-                ],
-              }}
-              transition={{
-                duration: 2.1,
-                repeat: Number.POSITIVE_INFINITY,
-                ease: "easeInOut",
-              }}
+          {!isAuthenticated && (
+            <motion.a
+              custom={4}
+              variants={fadeUpVariants}
+              initial="hidden"
+              animate="visible"
+              href="#features"
+              aria-label="Zu den Funktionen scrollen"
+              className="mt-8 inline-flex items-center justify-center rounded-full p-2 text-white/45 transition-colors hover:text-white/75"
             >
-              <ChevronDown className="size-6" />
-            </motion.span>
-          </motion.a>
+              <motion.span
+                animate={{
+                  opacity: [0.45, 0.85, 0.45],
+                  filter: [
+                    "drop-shadow(0 0 0px rgba(255,255,255,0))",
+                    "drop-shadow(0 0 8px rgba(255,255,255,0.28))",
+                    "drop-shadow(0 0 0px rgba(255,255,255,0))",
+                  ],
+                }}
+                transition={{
+                  duration: 2.1,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                }}
+              >
+                <ChevronDown className="size-6" />
+              </motion.span>
+            </motion.a>
+          )}
         </div>
       </div>
 
