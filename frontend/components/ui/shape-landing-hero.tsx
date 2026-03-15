@@ -1,12 +1,14 @@
 "use client";
 
 import { motion, type Variants } from "framer-motion";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
+import { ShortenUrlModal } from "@/components/ui/shorten-url-modal";
 
 function ElegantShape({
   className,
@@ -82,6 +84,7 @@ function HeroGeometric({
   title2?: string;
 }) {
   const { user, isAuthenticated } = useAuth();
+  const [isShortenModalOpen, setIsShortenModalOpen] = useState(false);
   const fadeUpEase: [number, number, number, number] = [0.25, 0.4, 0.25, 1];
   const fadeUpVariants: Variants = {
     hidden: { opacity: 0, y: 30 },
@@ -218,8 +221,10 @@ function HeroGeometric({
             )}
           >
             <Button
+              type="button"
               size="lg"
               className="cursor-pointer gap-2 px-7 text-base font-semibold shadow-lg shadow-black/30"
+              onClick={() => setIsShortenModalOpen(true)}
             >
               <Image
                 src="/scissors.svg"
@@ -286,6 +291,10 @@ function HeroGeometric({
       </div>
 
       <div className="absolute inset-0 bg-linear-to-t from-[#030303] via-transparent to-[#030303]/80 pointer-events-none" />
+      <ShortenUrlModal
+        isOpen={isShortenModalOpen}
+        onClose={() => setIsShortenModalOpen(false)}
+      />
     </div>
   );
 }
